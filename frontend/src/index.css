@@ -1,157 +1,302 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @import "tailwindcss";
 
 @theme {
-  /* Brand colors (Indigo theme) */
-  --color-brand-50: #f5f7ff;
-  --color-brand-100: #ebf0ff;
-  --color-brand-200: #dbe2ff;
-  --color-brand-300: #bfcbff;
-  --color-brand-400: #9aa9ff;
-  --color-brand-500: #6366f1;
-  --color-brand-600: #4f46e5;
-  --color-brand-700: #3f39cf;
-  --color-brand-800: #3530aa;
-  --color-brand-900: #2f2b88;
+  /* Warm accent – soft indigo-violet */
+  --color-accent-50:  #f5f3ff;
+  --color-accent-100: #ede9fe;
+  --color-accent-200: #ddd6fe;
+  --color-accent-300: #c4b5fd;
+  --color-accent-400: #a78bfa;
+  --color-accent-500: #7c3aed;
+  --color-accent-600: #6d28d9;
+  --color-accent-700: #5b21b6;
 
-  /* Dark slate shades (Crisp, flat SaaS color scheme) */
-  --color-dark-50: #f8fafc;
-  --color-dark-100: #f1f5f9;
-  --color-dark-200: #e2e8f0;
-  --color-dark-300: #cbd5e1;
-  --color-dark-400: #94a3b8;
-  --color-dark-500: #64748b;
-  --color-dark-600: #475569;
-  --color-dark-700: #334155;
-  --color-dark-800: #1e293b;
-  --color-dark-850: #131c2e;
-  --color-dark-900: #0f172a;
-  --color-dark-950: #020617;
+  /* Warm amber for highlights */
+  --color-warm-100: #fef3c7;
+  --color-warm-200: #fde68a;
+  --color-warm-300: #fcd34d;
+  --color-warm-400: #f59e0b;
+  --color-warm-500: #d97706;
+
+  /* Neutral warm grays */
+  --color-stone-50:  #fafaf9;
+  --color-stone-100: #f5f5f4;
+  --color-stone-150: #eeede9;
+  --color-stone-200: #e7e5e4;
+  --color-stone-300: #d6d3d1;
+  --color-stone-400: #a8a29e;
+  --color-stone-500: #78716c;
+  --color-stone-600: #57534e;
+  --color-stone-700: #44403c;
+  --color-stone-800: #292524;
+  --color-stone-900: #1c1917;
 
   /* Font */
-  --font-sans: "Outfit", "Inter", "system-ui", "sans-serif";
-
-  /* Shadow */
-  --shadow-glass: 0 10px 30px -10px rgba(0, 0, 0, 0.4);
+  --font-sans: "Inter", "system-ui", "sans-serif";
 }
 
-/* Global resets and body styling */
+/* ──────────────────────────────────────────────
+   Global resets
+────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
 body {
-  background-color: var(--color-dark-950);
-  color: var(--color-dark-100);
+  background-color: var(--color-stone-100);
+  color: var(--color-stone-800);
   font-family: var(--font-sans);
-  background-image: 
-    radial-gradient(circle at 15% 20%, rgba(99, 102, 241, 0.03) 0%, transparent 40%),
-    radial-gradient(circle at 85% 80%, rgba(99, 102, 241, 0.02) 0%, transparent 40%);
-  background-attachment: fixed;
-  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  margin: 0;
 }
 
-/* Custom Scrollbar for chat list and overall body (Hardware accelerated, tiny width) */
-::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
+/* ──────────────────────────────────────────────
+   Scrollbar – thin, warm
+────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background-color: rgba(71, 85, 105, 0.4);
+  background-color: var(--color-stone-300);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(71, 85, 105, 0.7);
+  background-color: var(--color-stone-400);
 }
 
-/* Hide scrollbars utility */
-.no-scrollbar::-webkit-scrollbar {
-  display: none; /* Safari and Chrome */
-}
-.no-scrollbar {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
-}
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-/* Custom Micro-Animations */
-@keyframes typing {
-  0%, 100% { transform: translateY(0); opacity: 0.4; }
-  50% { transform: translateY(-3px); opacity: 1; }
+/* ──────────────────────────────────────────────
+   Typing animation
+────────────────────────────────────────────── */
+@keyframes dot-pulse {
+  0%, 100% { opacity: 0.3; transform: translateY(0); }
+  50%       { opacity: 1;   transform: translateY(-3px); }
 }
 
 .dot-typing {
-  animation: typing 1.2s infinite ease-in-out;
+  animation: dot-pulse 1.3s ease-in-out infinite;
 }
 
-/* Solid Flat UI Helpers (Lag-free replacements for backdrop-filter) */
-.glass-panel {
-  background-color: var(--color-dark-900);
-  border: 1px solid rgba(51, 65, 85, 0.7);
+/* ──────────────────────────────────────────────
+   Card / Panel – warm paper feel
+────────────────────────────────────────────── */
+.card {
+  background-color: #ffffff;
+  border: 1px solid var(--color-stone-200);
   border-radius: 1rem;
-  box-shadow: 
-    0 10px 30px -10px rgba(2, 6, 23, 0.5),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.04);
 }
 
-.glass-input {
-  background-color: var(--color-dark-950);
-  border: 1px solid rgba(51, 65, 85, 0.8);
+/* ──────────────────────────────────────────────
+   Input – clean, subtle
+────────────────────────────────────────────── */
+.field-input {
+  background-color: #ffffff;
+  border: 1px solid var(--color-stone-300);
   border-radius: 0.75rem;
   padding: 0.75rem 1rem;
-  color: var(--color-dark-100);
+  color: var(--color-stone-800);
+  font-size: 0.9rem;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.glass-input:focus {
+  width: 100%;
   outline: none;
-  border-color: rgba(99, 102, 241, 0.6);
-  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.6);
-  background-color: var(--color-dark-950);
 }
 
-.glass-button {
-  background-color: var(--color-brand-600);
-  color: #fff;
-  padding: 0.75rem 1.25rem;
+.field-input:focus {
+  border-color: var(--color-accent-400);
+  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.15);
+}
+
+.field-input::placeholder {
+  color: var(--color-stone-400);
+}
+
+/* ──────────────────────────────────────────────
+   Buttons
+────────────────────────────────────────────── */
+.btn-primary {
+  background-color: var(--color-accent-600);
+  color: #ffffff;
+  padding: 0.7rem 1.4rem;
   border-radius: 0.75rem;
   font-weight: 500;
-  box-shadow: 0 4px 12px 0 rgba(79, 70, 229, 0.15);
-  transition: background-color 0.15s ease, transform 0.1s ease;
-  display: flex;
+  font-size: 0.875rem;
+  letter-spacing: 0.01em;
+  box-shadow: 0 2px 8px rgba(109, 40, 217, 0.25);
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
   cursor: pointer;
+  border: none;
 }
 
-.glass-button:hover {
-  background-color: var(--color-brand-500);
+.btn-primary:hover {
+  background-color: var(--color-accent-500);
+  box-shadow: 0 4px 14px rgba(109, 40, 217, 0.3);
 }
 
-.glass-button:active {
-  transform: scale(0.98);
-}
+.btn-primary:active { transform: scale(0.98); }
 
-.glass-button-secondary {
-  background-color: var(--color-dark-800);
-  border: 1px solid rgba(51, 65, 85, 0.5);
-  color: var(--color-dark-200);
-  padding: 0.75rem 1.25rem;
-  border-radius: 0.75rem;
+.btn-secondary {
+  background-color: transparent;
+  border: 1px solid var(--color-stone-300);
+  color: var(--color-stone-600);
+  padding: 0.55rem 1rem;
+  border-radius: 0.65rem;
+  font-size: 0.8125rem;
   font-weight: 500;
-  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
-  display: flex;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
   cursor: pointer;
 }
 
-.glass-button-secondary:hover {
-  background-color: var(--color-dark-750);
-  border-color: rgba(51, 65, 85, 0.7);
+.btn-secondary:hover {
+  background-color: var(--color-stone-100);
+  border-color: var(--color-stone-400);
+  color: var(--color-stone-700);
 }
 
-.glass-button-secondary:active {
-  transform: scale(0.98);
+.btn-secondary:active { transform: scale(0.98); }
+
+.btn-danger {
+  background-color: transparent;
+  border: 1px solid #fca5a5;
+  color: #dc2626;
+  padding: 0.5rem 0.875rem;
+  border-radius: 0.65rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  cursor: pointer;
+}
+
+.btn-danger:hover {
+  background-color: #fef2f2;
+  border-color: #f87171;
+}
+
+/* ──────────────────────────────────────────────
+   Chat bubbles
+────────────────────────────────────────────── */
+.bubble-user {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  color: #ffffff;
+  border-radius: 1rem 1rem 0.25rem 1rem;
+  padding: 0.75rem 1.1rem;
+  font-size: 0.9rem;
+  line-height: 1.65;
+  box-shadow: 0 2px 8px rgba(109, 40, 217, 0.2);
+  max-width: 75%;
+}
+
+.bubble-assistant {
+  background: #ffffff;
+  border: 1px solid var(--color-stone-200);
+  border-radius: 1rem 1rem 1rem 0.25rem;
+  padding: 0.875rem 1.1rem;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: var(--color-stone-700);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 10px rgba(0,0,0,0.03);
+  max-width: 80%;
+}
+
+/* ──────────────────────────────────────────────
+   Upload drop-zone
+────────────────────────────────────────────── */
+.drop-zone {
+  background-color: #ffffff;
+  border: 2px dashed var(--color-stone-300);
+  border-radius: 1rem;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+  cursor: pointer;
+}
+
+.drop-zone:hover, .drop-zone.drag-over {
+  border-color: var(--color-accent-400);
+  background-color: var(--color-accent-50);
+}
+
+/* ──────────────────────────────────────────────
+   Source chip (citation)
+────────────────────────────────────────────── */
+.citation-chip {
+  background-color: var(--color-stone-100);
+  border: 1px solid var(--color-stone-200);
+  color: var(--color-stone-600);
+  padding: 0.15rem 0.55rem;
+  border-radius: 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* ──────────────────────────────────────────────
+   Confidence badge
+────────────────────────────────────────────── */
+.badge-high   { background: #d1fae5; color: #065f46; }
+.badge-medium { background: #fef3c7; color: #92400e; }
+.badge-low    { background: #fee2e2; color: #991b1b; }
+
+.confidence-badge {
+  padding: 0.15rem 0.55rem;
+  border-radius: 0.4rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ──────────────────────────────────────────────
+   Fade-in animation for messages
+────────────────────────────────────────────── */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.msg-enter {
+  animation: fade-up 0.25s ease forwards;
+}
+
+/* ──────────────────────────────────────────────
+   Sidebar doc card
+────────────────────────────────────────────── */
+.doc-card {
+  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+  border: 1px solid var(--color-accent-200);
+  border-radius: 0.875rem;
+  padding: 0.875rem 1rem;
+}
+
+/* ──────────────────────────────────────────────
+   Spinner
+────────────────────────────────────────────── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.spinner {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid var(--color-stone-200);
+  border-top-color: var(--color-accent-500);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
 }

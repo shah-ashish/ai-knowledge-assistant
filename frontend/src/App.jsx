@@ -1,34 +1,196 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  FiUploadCloud, 
-  FiFileText, 
-  FiTrash2, 
-  FiSend, 
-  FiBookOpen, 
-  FiAlertTriangle, 
+import {
+  FiUploadCloud,
+  FiFileText,
+  FiTrash2,
+  FiSend,
+  FiBookOpen,
+  FiAlertTriangle,
   FiCheckCircle,
-  FiCpu,
-  FiMessageSquare
+  FiMessageCircle,
+  FiLayers,
+  FiChevronRight,
 } from 'react-icons/fi';
-import { uploadDocument, sendChatMessage, sendChatMessageStream, resetSession } from './services/api';
+import { uploadDocument, sendChatMessageStream, resetSession } from './services/api';
 import './App.css';
 
+/* ─── Avatar: simple initials-style human avatar ─── */
+function AssistantAvatar({ size = 32 }) {
+  return (
+    <div
+      style={{ width: size, height: size, minWidth: size }}
+      className="rounded-full bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center shadow-sm"
+    >
+      <span style={{ fontSize: size * 0.4, lineHeight: 1 }} className="text-white font-semibold select-none">
+        K
+      </span>
+    </div>
+  );
+}
+
+/* ─── Markdown renderer ─── */
+function MessageContent({ content }) {
+  if (!content) return null;
+  const lines = content.split('\n');
+  return (
+    <div style={{ lineHeight: 1.7 }}>
+      {lines.map((line, idx) => {
+        let html = line
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+        if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
+          return (
+            <li
+              key={idx}
+              className="list-disc ml-5 mt-0.5 text-[0.875rem]"
+              dangerouslySetInnerHTML={{ __html: html.trim().substring(2) }}
+            />
+          );
+        }
+        if (/^\d+\.\s/.test(line.trim())) {
+          return (
+            <li
+              key={idx}
+              className="list-decimal ml-5 mt-0.5 text-[0.875rem]"
+              dangerouslySetInnerHTML={{ __html: html.trim().replace(/^\d+\.\s/, '') }}
+            />
+          );
+        }
+        return (
+          <p
+            key={idx}
+            className="min-h-[1.2em] text-[0.875rem]"
+            dangerouslySetInnerHTML={{ __html: html }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+/* ─── Sidebar ─── */
+function Sidebar({ docMeta, onReset }) {
+  return (
+    <aside
+      className="hidden md:flex flex-col gap-5 p-5 flex-shrink-0"
+      style={{
+        width: 270,
+        borderRight: '1px solid #e7e5e4',
+        background: '#ffffff',
+        height: '100%',
+        overflowY: 'auto',
+      }}
+    >
+      {/* Brand */}
+      <div className="flex items-center gap-3 pb-4" style={{ borderBottom: '1px solid #e7e5e4' }}>
+        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center shadow-sm">
+          <FiMessageCircle className="text-white" size={17} />
+        </div>
+        <div>
+          <p className="font-semibold text-stone-800 text-sm leading-tight">Knowledge</p>
+          <p className="text-stone-400 text-xs">Document Assistant</p>
+        </div>
+      </div>
+
+      {/* Document card */}
+      {docMeta ? (
+        <div>
+          <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">
+            Active Document
+          </p>
+          <div className="doc-card">
+            <div className="flex items-start gap-2.5 mb-3">
+              <div className="mt-0.5 w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center flex-shrink-0">
+                <FiFileText className="text-violet-600" size={14} />
+              </div>
+              <div className="min-w-0">
+                <p
+                  className="text-stone-800 font-medium text-sm leading-tight truncate"
+                  title={docMeta.filename}
+                >
+                  {docMeta.filename}
+                </p>
+                <p className="text-stone-500 text-xs mt-0.5">PDF Document</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div className="bg-white rounded-lg px-2.5 py-2 text-center" style={{ border: '1px solid #ddd6fe' }}>
+                <p className="text-violet-700 font-bold text-base leading-none">{docMeta.pagesCount}</p>
+                <p className="text-stone-500 text-[10px] mt-0.5">Pages</p>
+              </div>
+              <div className="bg-white rounded-lg px-2.5 py-2 text-center" style={{ border: '1px solid #ddd6fe' }}>
+                <p className="text-violet-700 font-bold text-base leading-none">{docMeta.chunksCount}</p>
+                <p className="text-stone-500 text-[10px] mt-0.5">Chunks</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Status */}
+          <div className="flex items-center gap-2 mt-3 px-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
+            <span className="text-xs text-stone-500">Indexed & ready</span>
+          </div>
+
+          {/* Reset */}
+          <button onClick={onReset} className="btn-danger w-full mt-4">
+            <FiTrash2 size={12} />
+            Clear Document
+          </button>
+        </div>
+      ) : (
+        <div>
+          <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">
+            How it works
+          </p>
+          <div className="space-y-3">
+            {[
+              { icon: FiUploadCloud, label: 'Upload a PDF', desc: 'Any document up to 20 MB' },
+              { icon: FiLayers, label: 'Auto-indexed', desc: 'Chunked & embedded for search' },
+              { icon: FiMessageCircle, label: 'Ask questions', desc: 'Get cited, grounded answers' },
+            ].map(({ icon: Icon, label, desc }, i) => (
+              <div key={i} className="flex items-start gap-3">
+                <div className="w-7 h-7 rounded-lg bg-stone-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Icon size={13} className="text-stone-500" />
+                </div>
+                <div>
+                  <p className="text-stone-700 text-sm font-medium leading-tight">{label}</p>
+                  <p className="text-stone-400 text-xs mt-0.5">{desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Footer */}
+      <div className="mt-auto pt-4" style={{ borderTop: '1px solid #e7e5e4' }}>
+        <p className="text-[11px] text-stone-400 leading-relaxed">
+          Your document is indexed in memory only — it is never stored or logged.
+        </p>
+      </div>
+    </aside>
+  );
+}
+
+/* ─── Main app ─── */
 export default function App() {
   const [sessionId, setSessionId] = useState('');
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState('');
-  const [docMeta, setDocMeta] = useState(null); // { filename, pagesCount, chunksCount }
-  
+  const [docMeta, setDocMeta] = useState(null);
   const [messages, setMessages] = useState([]);
   const [inputQuestion, setInputQuestion] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [dragOver, setDragOver] = useState(false);
 
   const chatEndRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  // 1. Generate tab-isolated session ID
+  /* Session init */
   useEffect(() => {
     let sid = sessionStorage.getItem('rag_session_id');
     if (!sid) {
@@ -36,87 +198,71 @@ export default function App() {
       sessionStorage.setItem('rag_session_id', sid);
     }
     setSessionId(sid);
-    
-    // Recover document metadata state if session exists in storage
     const storedMeta = sessionStorage.getItem('rag_doc_meta');
-    if (storedMeta) {
-      setDocMeta(JSON.parse(storedMeta));
-    }
+    if (storedMeta) setDocMeta(JSON.parse(storedMeta));
   }, []);
 
-  // 2. Keep chat bottom-aligned
+  /* Auto-scroll */
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, chatLoading]);
 
-  // 3. File upload and verification
+  /* File handlers */
   const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0];
-    if (selectedFile) validateAndUpload(selectedFile);
+    const f = e.target.files[0];
+    if (f) validateAndUpload(f);
   };
 
-  const validateAndUpload = async (selectedFile) => {
+  const validateAndUpload = async (f) => {
     setErrorMsg('');
-    
-    if (selectedFile.type !== 'application/pdf' && !selectedFile.name.toLowerCase().endsWith('.pdf')) {
-      setErrorMsg('Invalid file format. Please upload a PDF document.');
+    if (f.type !== 'application/pdf' && !f.name.toLowerCase().endsWith('.pdf')) {
+      setErrorMsg('Please upload a PDF document.');
       return;
     }
-
-    const maxSize = 20 * 1024 * 1024;
-    if (selectedFile.size > maxSize) {
-      setErrorMsg('File too large. Maximum size allowed is 20 MB.');
+    if (f.size > 20 * 1024 * 1024) {
+      setErrorMsg('File too large — maximum 20 MB.');
       return;
     }
-
-    setFile(selectedFile);
-    await uploadFileToServer(selectedFile);
+    setFile(f);
+    await uploadFileToServer(f);
   };
 
   const uploadFileToServer = async (fileToUpload) => {
     setUploading(true);
-    setUploadStatus('Extracting text & generating index...');
-    
+    setUploadStatus('Reading pages & building search index…');
     try {
       const data = await uploadDocument(fileToUpload, sessionId);
-      
       const meta = {
         filename: data.filename,
         pagesCount: data.pagesCount,
         chunksCount: data.chunksCount,
       };
-      
       setDocMeta(meta);
       sessionStorage.setItem('rag_doc_meta', JSON.stringify(meta));
       setUploadStatus('');
-      
-      // Seed initial helpful outline summary in chat thread
-      setMessages([
-        {
-          role: 'model',
-          content: `**Document summary successfully compiled.**\n\n**Document Outline:**\n${data.summary || 'Ask me any questions about the content below!'}`,
-          isSystem: true
-        }
-      ]);
+      setMessages([{
+        role: 'assistant',
+        content: `I've read **${data.filename}** and built a search index across ${data.pagesCount} pages.\n\n**Here's a quick overview:**\n${data.summary || 'Ask me anything about this document.'}`,
+        isSystem: true,
+      }]);
     } catch (err) {
-      setErrorMsg(err.message || 'Error processing document. Please check server connections.');
+      setErrorMsg(err.message || 'Could not process the document. Please try again.');
       setFile(null);
     } finally {
       setUploading(false);
     }
   };
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
-  };
-
+  const handleDragOver = (e) => { e.preventDefault(); setDragOver(true); };
+  const handleDragLeave = () => setDragOver(false);
   const handleDrop = (e) => {
     e.preventDefault();
-    const droppedFile = e.dataTransfer.files[0];
-    if (droppedFile) validateAndUpload(droppedFile);
+    setDragOver(false);
+    const f = e.dataTransfer.files[0];
+    if (f) validateAndUpload(f);
   };
 
-  // 4. Send chat message
+  /* Chat */
   const handleSendQuestion = async (e) => {
     e.preventDefault();
     if (!inputQuestion.trim() || chatLoading || !docMeta) return;
@@ -124,7 +270,6 @@ export default function App() {
     const userMsg = inputQuestion.trim();
     setInputQuestion('');
     setErrorMsg('');
-
     setMessages((prev) => [...prev, { role: 'user', content: userMsg }]);
     setChatLoading(true);
 
@@ -134,346 +279,414 @@ export default function App() {
         sessionId,
         (meta) => {
           setMessages((prev) => {
-            if (prev.length === 0) return prev;
             const last = prev[prev.length - 1];
-            if (last && last.role === 'model') {
-              const updatedLast = {
-                ...last,
-                citations: meta.citations,
-                confidence: meta.confidence
-              };
-              return [...prev.slice(0, -1), updatedLast];
-            } else {
-              return [
-                ...prev,
-                {
-                  role: 'model',
-                  content: '',
-                  citations: meta.citations,
-                  confidence: meta.confidence
-                }
-              ];
+            if (last?.role === 'assistant') {
+              return [...prev.slice(0, -1), { ...last, citations: meta.citations, confidence: meta.confidence }];
             }
+            return [...prev, { role: 'assistant', content: '', citations: meta.citations, confidence: meta.confidence }];
           });
         },
         (delta) => {
           setChatLoading(false);
           setMessages((prev) => {
-            if (prev.length === 0) return prev;
             const last = prev[prev.length - 1];
-            if (last && last.role === 'model') {
-              const updatedLast = {
-                ...last,
-                content: last.content + delta
-              };
-              return [...prev.slice(0, -1), updatedLast];
-            } else {
-              return [
-                ...prev,
-                {
-                  role: 'model',
-                  content: delta,
-                  citations: [],
-                  confidence: ''
-                }
-              ];
+            if (last?.role === 'assistant') {
+              return [...prev.slice(0, -1), { ...last, content: last.content + delta }];
             }
+            return [...prev, { role: 'assistant', content: delta, citations: [], confidence: '' }];
           });
         }
       );
     } catch (err) {
-      setErrorMsg(err.message || 'Failed to generate answer. Please try again.');
+      setErrorMsg(err.message || 'Something went wrong. Please try again.');
     } finally {
       setChatLoading(false);
     }
   };
 
-  // 5. Reset Session
+  /* Reset */
   const handleReset = async () => {
-    if (window.confirm('Wipe current document index and chat history?')) {
-      setErrorMsg('');
-      try {
-        await resetSession(sessionId);
-      } catch (err) {
-        console.warn('API reset failed, clearing client state anyway');
-      }
-      
-      setFile(null);
-      setDocMeta(null);
-      setMessages([]);
-      setInputQuestion('');
-      sessionStorage.removeItem('rag_doc_meta');
-      if (fileInputRef.current) fileInputRef.current.value = '';
+    if (!window.confirm('Remove the current document and clear chat history?')) return;
+    setErrorMsg('');
+    try { await resetSession(sessionId); } catch { }
+    setFile(null);
+    setDocMeta(null);
+    setMessages([]);
+    setInputQuestion('');
+    sessionStorage.removeItem('rag_doc_meta');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  /* Keyboard shortcut: Enter to send, Shift+Enter for newline */
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendQuestion(e);
     }
   };
 
-  // 6. Rich-Text Markdown Parser
-  const renderMessageContent = (content) => {
-    if (!content) return null;
-    const lines = content.split('\n');
-    
-    return (
-      <div className="space-y-1">
-        {lines.map((line, idx) => {
-          let lineContent = line;
-          
-          // Bold matches **text**
-          lineContent = lineContent.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-          
-          // Bullet points starting with - or *
-          if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
-            const cleanText = lineContent.trim().substring(2);
-            return (
-              <li key={idx} className="list-disc ml-5 mt-0.5" dangerouslySetInnerHTML={{ __html: cleanText }} />
-            );
-          }
-          
-          // Numbered lists starting with digits.
-          if (/^\d+\.\s/.test(line.trim())) {
-            const cleanText = lineContent.trim().replace(/^\d+\.\s/, '');
-            return (
-              <li key={idx} className="list-decimal ml-5 mt-0.5" dangerouslySetInnerHTML={{ __html: cleanText }} />
-            );
-          }
-          
-          // Standard paragraphs
-          return (
-            <p key={idx} className="min-h-[1rem] leading-relaxed" dangerouslySetInnerHTML={{ __html: lineContent }} />
-          );
-        })}
-      </div>
-    );
-  };
-
+  /* ─── Render ─── */
   return (
-    <div className="h-screen max-h-screen flex flex-col bg-dark-950 text-dark-100 overflow-hidden font-sans">
-      
-      {/* Sleek Top Navbar */}
-      <header className="border-b border-dark-800 bg-dark-900 px-6 h-14 flex items-center justify-between flex-shrink-0 z-30">
-        <div className="flex items-center gap-2.5">
-          <img 
-            src="https://img.icons8.com/color/96/artificial-intelligence.png" 
-            alt="AI Logo" 
-            className="w-8 h-8 object-contain"
-          />
-          <span className="font-semibold text-white text-sm tracking-wide">AI Knowledge Assistant</span>
-        </div>
-        
-        {docMeta && (
-          <div className="flex items-center gap-4">
-            {/* Active Document Details */}
-            <div className="hidden md:flex items-center gap-2 bg-dark-950 px-3 py-1 rounded-lg border border-dark-800 text-xs">
-              <FiFileText className="text-brand-400" />
-              <span className="text-white font-medium max-w-[200px] truncate" title={docMeta.filename}>
-                {docMeta.filename}
-              </span>
-              <span className="text-dark-500">|</span>
-              <span className="text-dark-400">{docMeta.pagesCount} Pages</span>
-            </div>
-            
-            {/* Reset Button */}
-            <button 
-              onClick={handleReset}
-              className="text-xs text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 px-3 py-1.5 rounded-lg border border-rose-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#f5f5f4' }}>
+
+      {/* ── Mobile-only top bar (sidebar is hidden on small screens) ── */}
+   {/* ── Mobile-only top bar (sidebar is hidden on small screens) ── */}
+<header
+  className="flex md:hidden"
+  style={{
+    borderBottom: '1px solid #e7e5e4',
+    background: '#ffffff',
+    height: 52,
+    flexShrink: 0,
+    alignItems: 'center',
+    paddingLeft: 16,
+    paddingRight: 16,
+    gap: 10,
+    zIndex: 30,
+  }}
+>
+  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center">
+    <FiMessageCircle className="text-white" size={14} />
+  </div>
+
+  <span
+    className="font-semibold text-stone-800"
+    style={{ fontSize: '0.875rem' }}
+  >
+    Knowledge Assistant
+  </span>
+
+  {docMeta && (
+    <>
+      <div
+        className="ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium text-violet-700"
+        style={{
+          background: '#ede9fe',
+          border: '1px solid #ddd6fe',
+          maxWidth: 160,
+        }}
+      >
+        <FiFileText size={11} />
+        <span className="truncate">
+          {docMeta.filename}
+        </span>
+      </div>
+
+      <button
+        onClick={handleReset}
+        className="btn-danger"
+        style={{
+          padding: '0.4rem 0.6rem',
+          flexShrink: 0,
+        }}
+      >
+        <FiTrash2 size={12} />
+      </button>
+    </>
+  )}
+</header>
+
+      {/* ── Body ── */}
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+
+        <Sidebar docMeta={docMeta} onReset={handleReset} />
+
+        {/* ── Main column ── */}
+        <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+
+          {!docMeta ? (
+            /* ── Upload screen ── */
+            <div
+              style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 24,
+              }}
             >
-              <FiTrash2 size={13} />
-              Reset Document
-            </button>
-          </div>
-        )}
-      </header>
+              <div style={{ maxWidth: 480, width: '100%' }}>
 
-      {/* Main Container - strictly constrained to fit leftover screen space */}
-      <main className="flex-grow flex flex-col overflow-hidden relative">
-        
-        {!docMeta ? (
-          
-          /* ================= INGESTION UPLOAD STAGE ================= */
-          <div className="flex-grow flex flex-col justify-center items-center max-w-lg w-full mx-auto p-6 text-center select-none animate-float">
-            <div className="mb-6 flex flex-col items-center">
-              <img 
-                src="https://img.icons8.com/color/96/artificial-intelligence.png" 
-                alt="AI Logo" 
-                className="w-16 h-16 object-contain mb-3"
-              />
-              <h1 className="text-3xl font-bold tracking-tight text-white mb-2">
-                Knowledge Ingestion
-              </h1>
-              <p className="text-dark-400 text-sm leading-relaxed">
-                Upload your PDF file. The document will be chunked, embedded, and stored in server memory.
-              </p>
-            </div>
-
-            {errorMsg && (
-              <div className="w-full mb-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-start gap-2 text-left">
-                <FiAlertTriangle className="mt-0.5 text-rose-400 flex-shrink-0" size={16} />
-                <span>{errorMsg}</span>
-              </div>
-            )}
-
-            <div 
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-              className={`w-full glass-panel p-8 cursor-pointer border border-dashed ${
-                uploading ? 'border-brand-500/50 bg-dark-900/30' : 'border-dark-700 hover:border-brand-500/50 hover:bg-dark-905 transition-all'
-              } flex flex-col items-center justify-center min-h-[220px]`}
-            >
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                onChange={handleFileChange}
-                accept=".pdf"
-                className="hidden"
-              />
-
-              {uploading ? (
-                <div className="flex flex-col items-center">
-                  <div className="relative w-12 h-12 mb-3 flex items-center justify-center">
-                    <div className="absolute inset-0 rounded-full border-2 border-brand-500/10 border-t-brand-500 animate-spin"></div>
-                    <FiUploadCloud size={20} className="text-brand-400 animate-bounce" />
+                {/* Heading */}
+                <div className="text-center mb-8">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center mx-auto mb-4 shadow-lg">
+                    <FiBookOpen className="text-white" size={24} />
                   </div>
-                  <h3 className="text-white font-medium text-sm mb-0.5">Processing Document...</h3>
-                  <p className="text-dark-500 text-xs">{uploadStatus}</p>
+                  <h1 className="text-2xl font-bold text-stone-800 mb-2">
+                    Upload your document
+                  </h1>
+                  <p className="text-stone-500 text-sm leading-relaxed">
+                    Drop in any PDF and I'll read it, index it, and answer your questions with page-level citations.
+                  </p>
                 </div>
-              ) : (
-                <div className="flex flex-col items-center">
-                  <div className="w-12 h-12 rounded-xl bg-dark-800 text-dark-400 flex items-center justify-center mb-3">
-                    <FiUploadCloud size={22} />
-                  </div>
-                  <h3 className="text-white font-medium text-sm mb-0.5">Drag and drop your PDF here</h3>
-                  <p className="text-dark-500 text-xs mb-3">or click to browse files</p>
-                  <div className="text-[10px] text-dark-500 px-2 py-1 rounded bg-dark-950 border border-dark-800 uppercase tracking-wide font-medium">
-                    PDF • Max 20 MB
-                  </div>
-                </div>
-              )}
-            </div>
 
-            <div className="mt-6 flex items-center gap-1.5 text-[11px] text-dark-500 font-medium">
-              <FiCheckCircle size={13} className="text-brand-500/60" />
-              Index remains strictly in-memory and wipes when tab closes.
-            </div>
-          </div>
-
-        ) : (
-
-          /* ================= CHAT STAGE ================= */
-          <div className="flex-grow flex flex-col justify-between overflow-hidden max-w-4xl w-full mx-auto my-4 border border-dark-800 rounded-2xl bg-dark-900">
-            
-            {/* Scrollable Conversation Container */}
-            <div className="flex-grow overflow-y-auto px-6 py-6 space-y-6 no-scrollbar">
-              
-              {messages.map((msg, index) => {
-                if (msg.role === 'model' && !msg.content) {
-                  return null;
-                }
-                return (
-                  <div 
-                    key={index}
-                    className={`flex flex-col max-w-[85%] ${msg.role === 'user' ? 'self-end items-end' : 'self-start items-start'}`}
+                {/* Error */}
+                {errorMsg && (
+                  <div
+                    className="flex items-start gap-2.5 text-sm mb-4 p-3 rounded-xl"
+                    style={{ background: '#fef2f2', border: '1px solid #fca5a5', color: '#b91c1c' }}
                   >
-                  {/* Bubble content with custom Rich-Text Markdown rendering */}
-                  <div className={`p-4 rounded-xl text-[14px] leading-relaxed select-text ${
-                    msg.role === 'user' 
-                      ? 'bg-brand-600 text-white rounded-tr-none' 
-                      : 'bg-dark-900 text-dark-100 border border-dark-800 rounded-tl-none'
-                  }`}>
-                    {renderMessageContent(msg.content)}
+                    <FiAlertTriangle size={15} className="mt-0.5 flex-shrink-0" />
+                    <span>{errorMsg}</span>
                   </div>
+                )}
 
-                  {/* Sources Citations & Match confidence details */}
-                  {!msg.isSystem && msg.role === 'model' && (
-                    <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-dark-400 pl-1 select-none">
-                      
-                      {msg.confidence && (
-                        <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
-                          msg.confidence === 'High' 
-                            ? 'bg-emerald-500/15 text-emerald-400' 
-                            : msg.confidence === 'Medium'
-                            ? 'bg-amber-500/15 text-amber-400'
-                            : 'bg-orange-500/15 text-orange-400'
-                        }`}>
-                          {msg.confidence} Match
-                        </span>
-                      )}
+                {/* Drop zone */}
+                <div
+                  className={`drop-zone${dragOver ? ' drag-over' : ''}`}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onClick={() => !uploading && fileInputRef.current?.click()}
+                  style={{
+                    minHeight: 200,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 32,
+                    cursor: uploading ? 'default' : 'pointer',
+                  }}
+                >
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    accept=".pdf"
+                    className="hidden"
+                  />
 
-                      {msg.citations && msg.citations.length > 0 && (
-                        <div className="flex items-center gap-1 font-medium text-dark-400">
-                          <FiBookOpen size={12} className="text-dark-500" />
-                          <span>Sources:</span>
-                          <div className="flex gap-1 flex-wrap">
-                            {msg.citations.map((cit, cIdx) => (
-                              <span 
-                                key={cIdx} 
-                                className="bg-dark-900 px-1.5 py-0.5 rounded border border-dark-800 text-dark-300 font-semibold text-[10px]"
-                                title={cit.file}
-                              >
-                                Page {cit.page}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
+                  {uploading ? (
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="spinner" />
+                      <div className="text-center">
+                        <p className="text-stone-700 font-medium text-sm">{uploadStatus}</p>
+                        <p className="text-stone-400 text-xs mt-1">This takes a few seconds…</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-3 text-center">
+                      <div
+                        className="w-12 h-12 rounded-xl flex items-center justify-center"
+                        style={{ background: '#f5f5f4', border: '1px solid #e7e5e4' }}
+                      >
+                        <FiUploadCloud size={22} className="text-stone-400" />
+                      </div>
+                      <div>
+                        <p className="text-stone-700 font-medium text-sm">
+                          Drag & drop your PDF here
+                        </p>
+                        <p className="text-stone-400 text-xs mt-1">or click to browse — max 20 MB</p>
+                      </div>
+                      <span
+                        className="text-xs font-medium px-3 py-1 rounded-full"
+                        style={{ background: '#f5f5f4', color: '#78716c', border: '1px solid #e7e5e4' }}
+                      >
+                        PDF only
+                      </span>
                     </div>
                   )}
                 </div>
-              );
-            })}
 
-              {/* Typing loader */}
-              {chatLoading && (
-                <div className="self-start flex flex-col items-start gap-1 max-w-[80%] select-none">
-                  <div className="bg-dark-900 border border-dark-800 p-4 rounded-xl rounded-tl-none flex items-center gap-1 px-5">
-                    <div className="w-1.5 h-1.5 rounded-full bg-dark-400 dot-typing" style={{ animationDelay: '0s' }}></div>
-                    <div className="w-1.5 h-1.5 rounded-full bg-dark-400 dot-typing" style={{ animationDelay: '0.2s' }}></div>
-                    <div className="w-1.5 h-1.5 rounded-full bg-dark-400 dot-typing" style={{ animationDelay: '0.4s' }}></div>
-                  </div>
+                {/* Trust note */}
+                <div className="flex items-center justify-center gap-2 mt-5 text-stone-400" style={{ fontSize: '0.75rem' }}>
+                  <FiCheckCircle size={12} className="text-emerald-500" />
+                  <span>Your file is never stored — it lives in memory for this session only.</span>
                 </div>
-              )}
-
-              {/* Inline warning notification banner */}
-              {errorMsg && (
-                <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-start gap-2.5 select-none">
-                  <FiAlertTriangle className="mt-0.5 text-rose-400 flex-shrink-0" size={16} />
-                  <span>{errorMsg}</span>
-                </div>
-              )}
-
-              <div ref={chatEndRef} />
+              </div>
             </div>
 
-            {/* Bottom Input Area */}
-            <form 
-              onSubmit={handleSendQuestion}
-              className="border-t border-dark-800 bg-dark-950 p-4 flex gap-3 items-center sticky bottom-0 z-20"
-            >
-              <input 
-                type="text" 
-                value={inputQuestion}
-                onChange={(e) => setInputQuestion(e.target.value)}
-                placeholder="Ask a question about this document..."
-                disabled={chatLoading}
-                className="glass-input flex-grow text-sm"
-              />
-              <button 
-                type="submit" 
-                disabled={!inputQuestion.trim() || chatLoading}
-                className={`w-11 h-11 p-0 flex items-center justify-center flex-shrink-0 rounded-xl transition-all duration-150 cursor-pointer ${
-                  !inputQuestion.trim() || chatLoading 
-                    ? 'bg-dark-900 text-dark-600 border border-dark-800 cursor-not-allowed shadow-none' 
-                    : 'bg-brand-600 hover:bg-brand-500 active:scale-[0.98] text-white shadow-md shadow-brand-600/15'
-                }`}
+          ) : (
+            /* ── Chat screen ── */
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+
+              {/* Messages area */}
+              <div
+                className="no-scrollbar"
+                style={{ flex: 1, overflowY: 'auto', padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 20 }}
               >
-                <FiSend size={15} />
-              </button>
-            </form>
+                {messages.map((msg, index) => {
+                  if (msg.role === 'assistant' && !msg.content) return null;
 
-          </div>
-        )}
-      </main>
+                  const isUser = msg.role === 'user';
+                  return (
+                    <div
+                      key={index}
+                      className="msg-enter"
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: isUser ? 'flex-end' : 'flex-start',
+                        gap: 6,
+                      }}
+                    >
+                      {/* Avatar row */}
+                      {!isUser && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <AssistantAvatar size={28} />
+                          <span style={{ fontSize: '0.75rem', color: '#78716c', fontWeight: 500 }}>
+                            Knowledge Assistant
+                          </span>
+                        </div>
+                      )}
 
+                      {/* Bubble */}
+                      <div className={isUser ? 'bubble-user' : 'bubble-assistant'}>
+                        <MessageContent content={msg.content} />
+                      </div>
+
+                      {/* Citations & confidence */}
+                      {!isUser && !msg.isSystem && (msg.confidence || (msg.citations && msg.citations.length > 0)) && (
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            flexWrap: 'wrap',
+                            gap: 6,
+                            paddingLeft: 36,
+                          }}
+                        >
+                          {msg.confidence && (
+                            <span
+                              className={`confidence-badge ${msg.confidence === 'High' ? 'badge-high' :
+                                msg.confidence === 'Medium' ? 'badge-medium' : 'badge-low'
+                                }`}
+                            >
+                              {msg.confidence} match
+                            </span>
+                          )}
+                          {msg.citations && msg.citations.length > 0 && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                              <FiBookOpen size={11} color="#a8a29e" />
+                              {msg.citations.map((cit, cIdx) => (
+                                <span key={cIdx} className="citation-chip">p. {cit.page}</span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {/* Typing indicator */}
+                {chatLoading && (
+                  <div className="msg-enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <AssistantAvatar size={28} />
+                      <span style={{ fontSize: '0.75rem', color: '#78716c', fontWeight: 500 }}>Knowledge Assistant</span>
+                    </div>
+                    <div className="bubble-assistant" style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '0.75rem 1rem' }}>
+                      {[0, 0.2, 0.4].map((delay, i) => (
+                        <div
+                          key={i}
+                          className="dot-typing"
+                          style={{
+                            width: 7,
+                            height: 7,
+                            borderRadius: '50%',
+                            background: '#c4b5fd',
+                            animationDelay: `${delay}s`,
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Error */}
+                {errorMsg && (
+                  <div
+                    className="flex items-start gap-2.5 text-sm p-3 rounded-xl"
+                    style={{ background: '#fef2f2', border: '1px solid #fca5a5', color: '#b91c1c' }}
+                  >
+                    <FiAlertTriangle size={15} className="mt-0.5 flex-shrink-0" />
+                    <span>{errorMsg}</span>
+                  </div>
+                )}
+
+                {/* Empty state hint */}
+                {messages.length === 1 && !chatLoading && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingTop: 8 }}>
+                    {['What is this document about?', 'Summarize the key points', 'What are the main conclusions?'].map((hint) => (
+                      <button
+                        key={hint}
+                        onClick={() => setInputQuestion(hint)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          padding: '0.5rem 0.875rem',
+                          borderRadius: '2rem',
+                          border: '1px solid #e7e5e4',
+                          background: '#ffffff',
+                          color: '#57534e',
+                          fontSize: '0.8rem',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                          fontFamily: 'Inter, sans-serif',
+                        }}
+                        onMouseOver={(e) => { e.currentTarget.style.borderColor = '#c4b5fd'; e.currentTarget.style.color = '#6d28d9'; }}
+                        onMouseOut={(e) => { e.currentTarget.style.borderColor = '#e7e5e4'; e.currentTarget.style.color = '#57534e'; }}
+                      >
+                        <FiChevronRight size={12} />
+                        {hint}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <div ref={chatEndRef} />
+              </div>
+
+              {/* ── Input bar ── */}
+              <form
+                onSubmit={handleSendQuestion}
+                style={{
+                  padding: '12px 20px 16px',
+                  borderTop: '1px solid #e7e5e4',
+                  background: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                }}
+              >
+                <input
+                  type="text"
+                  value={inputQuestion}
+                  onChange={(e) => setInputQuestion(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Ask a question about this document…"
+                  disabled={chatLoading}
+                  className="field-input"
+                  style={{ flex: 1 }}
+                />
+                <button
+                  type="submit"
+                  disabled={!inputQuestion.trim() || chatLoading}
+                  style={{
+                    width: 42,
+                    height: 42,
+                    borderRadius: '0.75rem',
+                    border: 'none',
+                    flexShrink: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: (!inputQuestion.trim() || chatLoading) ? 'not-allowed' : 'pointer',
+                    background: (!inputQuestion.trim() || chatLoading) ? '#e7e5e4' : 'linear-gradient(135deg, #7c3aed, #6d28d9)',
+                    color: (!inputQuestion.trim() || chatLoading) ? '#a8a29e' : '#ffffff',
+                    boxShadow: (!inputQuestion.trim() || chatLoading) ? 'none' : '0 2px 8px rgba(109,40,217,0.3)',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <FiSend size={16} />
+                </button>
+              </form>
+            </div>
+          )}
+        </main>
+      </div>
     </div>
   );
 }
