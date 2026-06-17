@@ -1,0 +1,157 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  /* Brand colors (Indigo theme) */
+  --color-brand-50: #f5f7ff;
+  --color-brand-100: #ebf0ff;
+  --color-brand-200: #dbe2ff;
+  --color-brand-300: #bfcbff;
+  --color-brand-400: #9aa9ff;
+  --color-brand-500: #6366f1;
+  --color-brand-600: #4f46e5;
+  --color-brand-700: #3f39cf;
+  --color-brand-800: #3530aa;
+  --color-brand-900: #2f2b88;
+
+  /* Dark slate shades (Crisp, flat SaaS color scheme) */
+  --color-dark-50: #f8fafc;
+  --color-dark-100: #f1f5f9;
+  --color-dark-200: #e2e8f0;
+  --color-dark-300: #cbd5e1;
+  --color-dark-400: #94a3b8;
+  --color-dark-500: #64748b;
+  --color-dark-600: #475569;
+  --color-dark-700: #334155;
+  --color-dark-800: #1e293b;
+  --color-dark-850: #131c2e;
+  --color-dark-900: #0f172a;
+  --color-dark-950: #020617;
+
+  /* Font */
+  --font-sans: "Outfit", "Inter", "system-ui", "sans-serif";
+
+  /* Shadow */
+  --shadow-glass: 0 10px 30px -10px rgba(0, 0, 0, 0.4);
+}
+
+/* Global resets and body styling */
+body {
+  background-color: var(--color-dark-950);
+  color: var(--color-dark-100);
+  font-family: var(--font-sans);
+  background-image: 
+    radial-gradient(circle at 15% 20%, rgba(99, 102, 241, 0.03) 0%, transparent 40%),
+    radial-gradient(circle at 85% 80%, rgba(99, 102, 241, 0.02) 0%, transparent 40%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+/* Custom Scrollbar for chat list and overall body (Hardware accelerated, tiny width) */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: rgba(71, 85, 105, 0.4);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(71, 85, 105, 0.7);
+}
+
+/* Hide scrollbars utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Safari and Chrome */
+}
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* Custom Micro-Animations */
+@keyframes typing {
+  0%, 100% { transform: translateY(0); opacity: 0.4; }
+  50% { transform: translateY(-3px); opacity: 1; }
+}
+
+.dot-typing {
+  animation: typing 1.2s infinite ease-in-out;
+}
+
+/* Solid Flat UI Helpers (Lag-free replacements for backdrop-filter) */
+.glass-panel {
+  background-color: var(--color-dark-900);
+  border: 1px solid rgba(51, 65, 85, 0.7);
+  border-radius: 1rem;
+  box-shadow: 
+    0 10px 30px -10px rgba(2, 6, 23, 0.5),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+}
+
+.glass-input {
+  background-color: var(--color-dark-950);
+  border: 1px solid rgba(51, 65, 85, 0.8);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  color: var(--color-dark-100);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.glass-input:focus {
+  outline: none;
+  border-color: rgba(99, 102, 241, 0.6);
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.6);
+  background-color: var(--color-dark-950);
+}
+
+.glass-button {
+  background-color: var(--color-brand-600);
+  color: #fff;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.75rem;
+  font-weight: 500;
+  box-shadow: 0 4px 12px 0 rgba(79, 70, 229, 0.15);
+  transition: background-color 0.15s ease, transform 0.1s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.glass-button:hover {
+  background-color: var(--color-brand-500);
+}
+
+.glass-button:active {
+  transform: scale(0.98);
+}
+
+.glass-button-secondary {
+  background-color: var(--color-dark-800);
+  border: 1px solid rgba(51, 65, 85, 0.5);
+  color: var(--color-dark-200);
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.75rem;
+  font-weight: 500;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.glass-button-secondary:hover {
+  background-color: var(--color-dark-750);
+  border-color: rgba(51, 65, 85, 0.7);
+}
+
+.glass-button-secondary:active {
+  transform: scale(0.98);
+}
