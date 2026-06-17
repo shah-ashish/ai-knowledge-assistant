@@ -2,6 +2,8 @@
   "name": "ai-knowledge-assistant",
   "version": "1.0.0",
   "description": "Full-stack AI Knowledge Assistant (RAG)",
+  "main": "backend/src/app.js",
+  "type": "module",
   "scripts": {
     "install-all": "npm install --prefix backend && npm install --prefix frontend",
     "build-frontend": "npm run build --prefix frontend",
