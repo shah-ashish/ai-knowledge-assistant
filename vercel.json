@@ -6,7 +6,7 @@
       "use": "@vercel/node",
       "config": {
         "includeFiles": [
-          "frontend/dist/**"
+          "../../frontend/dist/**"
         ]
       }
     }
